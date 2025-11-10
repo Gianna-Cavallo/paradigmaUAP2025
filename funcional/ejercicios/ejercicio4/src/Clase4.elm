@@ -506,10 +506,9 @@ insertarBST valor tree =
 
         Node v izq der ->
             if valor == v then
-                Err ("El valor " ++ String.fromInt valor ++ " ya existe en el árbol")
+                Err "El valor ya existe en el árbol"
 
             else if valor < v then
-                -- Insertar a la izquierda
                 case insertarBST valor izq of
                     Ok nuevoIzq ->
                         Ok (Node v nuevoIzq der)
@@ -518,7 +517,6 @@ insertarBST valor tree =
                         Err msg
 
             else
-                -- Insertar a la derecha
                 case insertarBST valor der of
                     Ok nuevoDer ->
                         Ok (Node v izq nuevoDer)
@@ -657,9 +655,7 @@ arbolEjemplo =
 -- buscarPositivo 10 arbolEjemplo == Err "El valor no se encuentra en el árbol"
 
 -}
-
 -- 30. Pipeline de Validaciones
-
 validarArbol : Tree Int -> Result String (Tree Int)
 validarArbol arbol =
     validarBST arbol
