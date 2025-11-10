@@ -658,23 +658,43 @@ arbolEjemplo =
 
 -}
 
-
 -- 30. Pipeline de Validaciones
-
 
 validarArbol : Tree Int -> Result String (Tree Int)
 validarArbol arbol =
-    Err "Validación fallida"
+    validarBST arbol
+        |> Result.andThen (\_ -> validarPositivos arbol)
+
+
+
+validarPositivos : Tree Int -> Result String (Tree Int)
+validarPositivos arbol =
+    if existePositivo arbol then
+        Ok arbol
+    else
+        Err "El árbol no contiene valores positivos"
+
+
+existePositivo : Tree Int -> Bool
+existePositivo arbol =
+    case arbol of
+        Empty ->
+            False
+        Node v izq der ->
+            v > 0 || existePositivo izq || existePositivo der
 
 
 
 -- 31. Encadenar Búsquedas
-
-
 buscarEnDosArboles : Int -> Tree Int -> Tree Int -> Result String Int
 buscarEnDosArboles valor arbol1 arbol2 =
-    Err "Búsqueda fallida"
+    case buscarEnBST valor arbol1 of
+        Ok v ->
+            Ok v
 
+        Err _ ->
+            buscarEnBST valor arbol2
+                |> Result.mapError (\_ -> "Búsqueda fallida")
 
 
 -- ============================================================================
@@ -852,35 +872,6 @@ desdeListaBST lista =
         (Ok Empty)
         lista
 
-
--- Reutilizamos la función insertarBST
-insertarBST : comparable -> Tree comparable -> Result String (Tree comparable)
-insertarBST valor arbol =
-    case arbol of
-        Empty ->
-            Ok (Node valor Empty Empty)
-
-        Node v izq der ->
-            if valor == v then
-                Err ("El valor " ++ String.fromInt valor ++ " ya existe en el árbol")
-
-            else if valor < v then
-                case insertarBST valor izq of
-                    Ok nuevoIzq ->
-                        Ok (Node v nuevoIzq der)
-
-                    Err msg ->
-                        Err msg
-
-            else
-                case insertarBST valor der of
-                    Ok nuevoDer ->
-                        Ok (Node v izq nuevoDer)
-
-                    Err msg ->
-                        Err msg
-
-
 -- 40. Verificar Balance
 estaBalanceado : Tree a -> Bool
 estaBalanceado arbol =
@@ -910,11 +901,34 @@ alturaYBalance arbol =
                     Nothing
                     
 -- 41. Balancear BST
-
-
 balancear : Tree comparable -> Tree comparable
 balancear arbol =
-    Empty
+    let
+        valoresOrdenados = inorder arbol
+    in
+    construirBalanceado valoresOrdenados
+
+
+-- Función auxiliar: crea un árbol balanceado a partir de una lista ordenada
+construirBalanceado : List comparable -> Tree comparable
+construirBalanceado lista =
+    case lista of
+        [] ->
+            Empty
+
+        _ ->
+            let
+                len = List.length lista
+                mitad = len // 2
+                izq = List.take mitad lista
+                resto = List.drop mitad lista
+            in
+            case resto of
+                [] ->
+                    Empty
+
+                x :: der ->
+                    Node x (construirBalanceado izq) (construirBalanceado der)
 
 
 
@@ -989,14 +1003,9 @@ ancestroComun valor1 valor2 arbol =
 
             else
                 Ok v
-
 -- ============================================================================
 -- PARTE 6: DESAFÍO FINAL - SISTEMA COMPLETO
 -- ============================================================================
--- 45. Sistema Completo de BST
--- (Las funciones individuales ya están definidas arriba)
--- Operaciones que retornan Bool
-
 
 esBSTValido : Tree comparable -> Bool
 esBSTValido arbol =
@@ -1010,31 +1019,47 @@ estaBalanceadoCompleto arbol =
 
 contieneValor : comparable -> Tree comparable -> Bool
 contieneValor valor arbol =
-    contiene valor arbol
-
+    case buscarEnBST valor arbol of
+        Ok _ -> True
+        Err _ -> False
 
 
 -- Operaciones que retornan Maybe
 
-
 buscarMaybe : comparable -> Tree comparable -> Maybe comparable
 buscarMaybe valor arbol =
-    buscar valor arbol
+    case buscarEnBST valor arbol of
+        Ok v -> Just v
+        Err _ -> Nothing
 
 
 encontrarMinimoMaybe : Tree comparable -> Maybe comparable
 encontrarMinimoMaybe arbol =
-    encontrarMinimo arbol
+    case arbol of
+        Empty ->
+            Nothing
+
+        Node v Empty _ ->
+            Just v
+
+        Node _ izq _ ->
+            encontrarMinimoMaybe izq
 
 
 encontrarMaximoMaybe : Tree comparable -> Maybe comparable
 encontrarMaximoMaybe arbol =
-    encontrarMaximo arbol
+    case arbol of
+        Empty ->
+            Nothing
 
+        Node v _ Empty ->
+            Just v
+
+        Node _ _ der ->
+            encontrarMaximoMaybe der
 
 
 -- Operaciones que retornan Result
-
 
 insertarResult : comparable -> Tree comparable -> Result String (Tree comparable)
 insertarResult valor arbol =
@@ -1053,12 +1078,18 @@ validarResult arbol =
 
 obtenerEnPosicion : Int -> Tree comparable -> Result String comparable
 obtenerEnPosicion posicion arbol =
-    Err "Posición inválida"
+    let
+        lista = inorder arbol
+    in
+    case List.drop posicion lista of
+        valor :: _ ->
+            Ok valor
 
+        [] ->
+            Err "Posición inválida"
 
 
 -- Operaciones de transformación
-
 
 map : (a -> b) -> Tree a -> Tree b
 map funcion arbol =
@@ -1075,9 +1106,7 @@ fold funcion acumulador arbol =
     foldArbol funcion acumulador arbol
 
 
-
 -- Conversiones
-
 
 aLista : Tree a -> List a
 aLista arbol =
@@ -1086,4 +1115,4 @@ aLista arbol =
 
 desdeListaBalanceada : List comparable -> Tree comparable
 desdeListaBalanceada lista =
-    Empty
+    construirBalanceado (List.sort lista)
