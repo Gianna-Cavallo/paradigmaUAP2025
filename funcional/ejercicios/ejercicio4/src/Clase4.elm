@@ -58,17 +58,24 @@ arbolMediano =
 
 esVacio : Tree a -> Bool
 esVacio arbol =
-    False
+    case arbol of
+        Empty ->
+            True
 
+        _ ->
+            False
 
 
 -- 3. Es Hoja
 
-
 esHoja : Tree a -> Bool
 esHoja arbol =
-    False
+    case arbol of
+        Node _ Empty Empty ->
+            True
 
+        _ ->
+            False
 
 
 -- ============================================================================
@@ -79,8 +86,12 @@ esHoja arbol =
 
 tamano : Tree a -> Int
 tamano arbol =
-    0
+    case arbol of
+        Empty ->
+            0
 
+        Node _ izquierda derecha ->
+            1 + tamano izquierda + tamano derecha
 
 
 -- 5. Altura del Árbol
@@ -88,8 +99,12 @@ tamano arbol =
 
 altura : Tree a -> Int
 altura arbol =
-    0
+    case arbol of
+        Empty ->
+            0
 
+        Node _ izquierda derecha ->
+            1 + max (altura izquierda) (altura derecha)
 
 
 -- 6. Suma de Valores
@@ -97,8 +112,12 @@ altura arbol =
 
 sumarArbol : Tree Int -> Int
 sumarArbol arbol =
-    0
+    case arbol of
+        Empty ->
+            0
 
+        Node valor izquierda derecha ->
+            valor + sumarArbol izquierda + sumarArbol derecha
 
 
 -- 7. Contiene Valor
@@ -106,8 +125,15 @@ sumarArbol arbol =
 
 contiene : a -> Tree a -> Bool
 contiene valor arbol =
-    False
+    case arbol of
+        Empty ->
+            False
 
+        Node actual izquierda derecha ->
+            if valor == actual then
+                True
+            else
+                contiene valor izquierda || contiene valor derecha
 
 
 -- 8. Contar Hojas
@@ -115,8 +141,15 @@ contiene valor arbol =
 
 contarHojas : Tree a -> Int
 contarHojas arbol =
-    0
+    case arbol of
+        Empty ->
+            0
 
+        Node _ Empty Empty ->
+            1
+
+        Node _ izquierda derecha ->
+            contarHojas izquierda + contarHojas derecha
 
 
 -- 9. Valor Mínimo (sin Maybe)
@@ -124,8 +157,20 @@ contarHojas arbol =
 
 minimo : Tree Int -> Int
 minimo arbol =
-    0
+    case arbol of
+        Empty ->
+            0
 
+        Node valor Empty Empty ->
+            valor
+
+        Node valor izquierda derecha ->
+            let
+                minIzq = minimo izquierda
+                minDer = minimo derecha
+            in
+            List.minimum [ valor, minIzq, minDer ]
+                |> Maybe.withDefault valor
 
 
 -- 10. Valor Máximo (sin Maybe)
@@ -133,8 +178,15 @@ minimo arbol =
 
 maximo : Tree Int -> Int
 maximo arbol =
-    0
+    case arbol of
+        Empty ->
+            0
 
+        Node valor Empty Empty ->
+            valor
+
+        Node valor izquierda derecha ->
+            Maybe.withDefault valor (List.maximum [ valor, maximo izquierda, maximo derecha ])
 
 
 -- ============================================================================
@@ -145,8 +197,20 @@ maximo arbol =
 
 buscar : a -> Tree a -> Maybe a
 buscar valor arbol =
-    Nothing
+    case arbol of
+        Empty ->
+            Nothing
 
+        Node actual izquierda derecha ->
+            if valor == actual then
+                Just actual
+            else
+                case buscar valor izquierda of
+                    Just encontrado ->
+                        Just encontrado
+
+                    Nothing ->
+                        buscar valor derecha
 
 
 -- 12. Encontrar Mínimo (con Maybe)
@@ -154,8 +218,34 @@ buscar valor arbol =
 
 encontrarMinimo : Tree comparable -> Maybe comparable
 encontrarMinimo arbol =
-    Nothing
+    case arbol of
+        Empty ->
+            Nothing
 
+        Node valor Empty Empty ->
+            Just valor
+
+        Node valor izquierda derecha ->
+            let
+                minIzq = encontrarMinimo izquierda
+                minDer = encontrarMinimo derecha
+
+                -- función auxiliar para obtener el mínimo de dos Maybe
+                minConMaybe a b =
+                    case (a, b) of
+                        (Just x, Just y) ->
+                            Just (min x y)
+
+                        (Just x, Nothing) ->
+                            Just x
+
+                        (Nothing, Just y) ->
+                            Just y
+
+                        (Nothing, Nothing) ->
+                            Nothing
+            in
+            minConMaybe (Just valor) (minConMaybe minIzq minDer)
 
 
 -- 13. Encontrar Máximo (con Maybe)
@@ -163,8 +253,34 @@ encontrarMinimo arbol =
 
 encontrarMaximo : Tree comparable -> Maybe comparable
 encontrarMaximo arbol =
-    Nothing
+    case arbol of
+        Empty ->
+            Nothing
 
+        Node valor Empty Empty ->
+            Just valor
+
+        Node valor izquierda derecha ->
+            let
+                maxIzq = encontrarMaximo izquierda
+                maxDer = encontrarMaximo derecha
+
+                -- función auxiliar para obtener el máximo de dos Maybe
+                maxConMaybe a b =
+                    case (a, b) of
+                        (Just x, Just y) ->
+                            Just (max x y)
+
+                        (Just x, Nothing) ->
+                            Just x
+
+                        (Nothing, Just y) ->
+                            Just y
+
+                        (Nothing, Nothing) ->
+                            Nothing
+            in
+            maxConMaybe (Just valor) (maxConMaybe maxIzq maxDer)
 
 
 -- 14. Buscar Por Predicado
@@ -172,8 +288,20 @@ encontrarMaximo arbol =
 
 buscarPor : (a -> Bool) -> Tree a -> Maybe a
 buscarPor predicado arbol =
-    Nothing
+    case arbol of
+        Empty ->
+            Nothing
 
+        Node valor izquierda derecha ->
+            if predicado valor then
+                Just valor
+            else
+                case buscarPor predicado izquierda of
+                    Just encontrado ->
+                        Just encontrado
+
+                    Nothing ->
+                        buscarPor predicado derecha
 
 
 -- 15. Obtener Valor de Raíz
@@ -181,8 +309,12 @@ buscarPor predicado arbol =
 
 raiz : Tree a -> Maybe a
 raiz arbol =
-    Nothing
+    case arbol of
+        Empty ->
+            Nothing
 
+        Node valor _ _ ->
+            Just valor
 
 
 -- 16. Obtener Hijo Izquierdo
@@ -190,13 +322,22 @@ raiz arbol =
 
 hijoIzquierdo : Tree a -> Maybe (Tree a)
 hijoIzquierdo arbol =
-    Nothing
+    case arbol of
+        Empty ->
+            Nothing
+
+        Node _ izquierda _ ->
+            Just izquierda
 
 
 hijoDerecho : Tree a -> Maybe (Tree a)
 hijoDerecho arbol =
-    Nothing
+    case arbol of
+        Empty ->
+            Nothing
 
+        Node _ _ derecha ->
+            Just derecha
 
 
 -- 17. Obtener Nieto
@@ -204,8 +345,8 @@ hijoDerecho arbol =
 
 nietoIzquierdoIzquierdo : Tree a -> Maybe (Tree a)
 nietoIzquierdoIzquierdo arbol =
-    Nothing
-
+    hijoIzquierdo arbol
+        |> Maybe.andThen hijoIzquierdo
 
 
 -- 18. Buscar en Profundidad
@@ -213,13 +354,26 @@ nietoIzquierdoIzquierdo arbol =
 
 obtenerSubarbol : a -> Tree a -> Maybe (Tree a)
 obtenerSubarbol valor arbol =
-    Nothing
+    case arbol of
+        Empty ->
+            Nothing
+
+        Node actual izquierda derecha ->
+            if valor == actual then
+                Just arbol
+            else
+                case obtenerSubarbol valor izquierda of
+                    Just sub ->
+                        Just sub
+
+                    Nothing ->
+                        obtenerSubarbol valor derecha
 
 
 buscarEnSubarbol : a -> a -> Tree a -> Maybe a
 buscarEnSubarbol valor1 valor2 arbol =
-    Nothing
-
+    obtenerSubarbol valor1 arbol
+        |> Maybe.andThen (\subArbol -> buscar valor2 subArbol)
 
 
 -- ============================================================================
@@ -230,8 +384,12 @@ buscarEnSubarbol valor1 valor2 arbol =
 
 validarNoVacio : Tree a -> Result String (Tree a)
 validarNoVacio arbol =
-    Err "El árbol está vacío"
+    case arbol of
+        Empty ->
+            Err "El árbol está vacío"
 
+        _ ->
+            Ok arbol
 
 
 -- 20. Obtener Raíz con Error
@@ -239,8 +397,12 @@ validarNoVacio arbol =
 
 obtenerRaiz : Tree a -> Result String a
 obtenerRaiz arbol =
-    Err "No se puede obtener la raíz de un árbol vacío"
+    case arbol of
+        Empty ->
+            Err "No se puede obtener la raíz de un árbol vacío"
 
+        Node valor _ _ ->
+            Ok valor
 
 
 -- 21. Dividir en Valor Raíz y Subárboles
@@ -248,8 +410,12 @@ obtenerRaiz arbol =
 
 dividir : Tree a -> Result String ( a, Tree a, Tree a )
 dividir arbol =
-    Err "No se puede dividir un árbol vacío"
+    case arbol of
+        Empty ->
+            Err "No se puede dividir un árbol vacío"
 
+        Node valor izquierda derecha ->
+            Ok ( valor, izquierda, derecha )
 
 
 -- 22. Obtener Mínimo con Error
@@ -257,9 +423,30 @@ dividir arbol =
 
 obtenerMinimo : Tree comparable -> Result String comparable
 obtenerMinimo arbol =
-    Err "No hay mínimo en un árbol vacío"
+    case arbol of
+        Empty ->
+            Err "No hay mínimo en un árbol vacío"
 
+        Node valor Empty Empty ->
+            Ok valor
 
+        Node valor izquierda derecha ->
+            let
+                minIzq = obtenerMinimo izquierda
+                minDer = obtenerMinimo derecha
+            in
+            case (minIzq, minDer) of
+                (Ok a, Ok b) ->
+                    Ok (min valor (min a b))
+
+                (Ok a, Err _) ->
+                    Ok (min valor a)
+
+                (Err _, Ok b) ->
+                    Ok (min valor b)
+
+                (Err _, Err _) ->
+                    Ok valor
 
 -- 23. Verificar si es BST
 
@@ -281,14 +468,14 @@ esBSTConLimites tree min max =
                 -- Verificamos si el valor está dentro de los límites
                 dentroDeLimites =
                     case (min, max) of
-                        (Just minimo, Just maximo) ->
-                            valor > minimo && valor < maximo
+                        (Just minLimit, Just maxLimit) ->
+                            valor > minLimit && valor < maxLimit
 
-                        (Just minimo, Nothing) ->
-                            valor > minimo
+                        (Just minLimit, Nothing) ->
+                            valor > minLimit
 
-                        (Nothing, Just maximo) ->
-                            valor < maximo
+                        (Nothing, Just maxLimit) ->
+                            valor < maxLimit
 
                         (Nothing, Nothing) ->
                             True
@@ -390,33 +577,6 @@ validarBST arbol =
         Err "El árbol no es un BST válido"
 
 
--- Función auxiliar (misma que antes)
-esBSTConLimites : Tree comparable -> Maybe comparable -> Maybe comparable -> Bool
-esBSTConLimites tree min max =
-    case tree of
-        Empty ->
-            True
-
-        Node valor izq der ->
-            let
-                dentroDeLimites =
-                    case (min, max) of
-                        (Just minimo, Just maximo) ->
-                            valor > minimo && valor < maximo
-
-                        (Just minimo, Nothing) ->
-                            valor > minimo
-
-                        (Nothing, Just maximo) ->
-                            valor < maximo
-
-                        (Nothing, Nothing) ->
-                            True
-            in
-            dentroDeLimites
-                && esBSTConLimites izq min (Just valor)
-                && esBSTConLimites der (Just valor) max
-
 {-
 bstValido =
     Node 5 (Node 3 Empty Empty) (Node 7 Empty Empty)
@@ -487,20 +647,6 @@ buscarPositivo valor arbol =
             Err msg
 
 
--- Función auxiliar (como la del ejercicio 25)
-buscarEnBST : comparable -> Tree comparable -> Result String comparable
-buscarEnBST valor arbol =
-    case arbol of
-        Empty ->
-            Err "El valor no se encuentra en el árbol"
-
-        Node v izq der ->
-            if valor == v then
-                Ok v
-            else if valor < v then
-                buscarEnBST valor izq
-            else
-                buscarEnBST valor der
 
 {-
 arbolEjemplo =
