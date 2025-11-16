@@ -497,4 +497,4 @@ saltar n lista =
         lista
 
     else
-        saltar (n - 1) (tail lista)
+        saltar (n - 1) (tail lista) 
